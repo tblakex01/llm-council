@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   backend-lint:
     name: Backend Linting & Formatting
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -33,6 +38,8 @@ jobs:
   backend-syntax:
     name: Backend Syntax Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -53,6 +60,8 @@ jobs:
   frontend-lint:
     name: Frontend Linting
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -74,6 +83,8 @@ jobs:
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -102,6 +113,8 @@ jobs:
   all-checks:
     name: All Checks Passed
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [backend-lint, backend-syntax, frontend-lint, frontend-build]
     if: always()
     steps:
