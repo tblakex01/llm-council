@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-lint:
+    name: Backend Linting & Formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+      
+      - name: Run ruff linting
+        run: ruff check backend/
+      
+      - name: Run ruff format check
+        run: ruff format --check backend/
+
+  backend-syntax:
+    name: Backend Syntax Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn python-dotenv httpx pydantic
+      
+      - name: Check Python syntax
+        run: python -m py_compile backend/*.py
+
+  frontend-lint:
+    name: Frontend Linting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  all-checks:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [backend-lint, backend-syntax, frontend-lint, frontend-build]
+    if: always()
+    steps:
+      - name: Check if all jobs succeeded
+        run: |
+          if [[ "${{ needs.backend-lint.result }}" == "success" && \
+                "${{ needs.backend-syntax.result }}" == "success" && \
+                "${{ needs.frontend-lint.result }}" == "success" && \
+                "${{ needs.frontend-build.result }}" == "success" ]]; then
+            echo "✓ All checks passed!"
+            exit 0
+          else
+            echo "✗ Some checks failed:"
+            echo "  Backend Lint: ${{ needs.backend-lint.result }}"
+            echo "  Backend Syntax: ${{ needs.backend-syntax.result }}"
+            echo "  Frontend Lint: ${{ needs.frontend-lint.result }}"
+            echo "  Frontend Build: ${{ needs.frontend-build.result }}"
+            exit 1
+          fi
