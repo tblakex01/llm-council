@@ -49,14 +49,14 @@ async def stage2_collect_rankings(
     # Create mapping from label to model name
     label_to_model = {
         f"Response {label}": result["model"]
-        for label, result in zip(labels, stage1_results, strict=False)
+        for label, result in zip(labels, stage1_results, strict=True)
     }
 
     # Build the ranking prompt
     responses_text = "\n\n".join(
         [
             f"Response {label}:\n{result['response']}"
-            for label, result in zip(labels, stage1_results, strict=False)
+            for label, result in zip(labels, stage1_results, strict=True)
         ]
     )
 
